@@ -1,13 +1,15 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Express 2013 for Windows Desktop
-VisualStudioVersion = 12.0.21005.1
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScorpioTech.Framework.PlugIn", "ScorpioTech.Framework.PlugIn\ScorpioTech.Framework.PlugIn.csproj", "{F1C8CE35-864C-403C-8308-12B5146633BD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScorpioTech.Framework.LogServer", "ScorpioTech.Framework.LogServer\ScorpioTech.Framework.LogServer.csproj", "{64A6115F-FC1F-4601-818D-3CAFEE4F549B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScorpioTech.Framework.DBSchema", "ScorpioTech.Framework.DBSchema\ScorpioTech.Framework.DBSchema.csproj", "{59F7E04C-3D29-4EE1-9CA3-21F3E693B0B0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScorpioTech.Framework.netNUTClient", "ScorpioTech.Framework.netNUTClient\ScorpioTech.Framework.netNUTClient.csproj", "{C2DA85E2-9A1A-4148-A092-1DA7ACEDCC14}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -41,6 +43,12 @@ Global
 		{59F7E04C-3D29-4EE1-9CA3-21F3E693B0B0}.Release|Any CPU.Build.0 = Release|Any CPU
 		{59F7E04C-3D29-4EE1-9CA3-21F3E693B0B0}.Release|x86.ActiveCfg = Release|x86
 		{59F7E04C-3D29-4EE1-9CA3-21F3E693B0B0}.Release|x86.Build.0 = Release|x86
+		{C2DA85E2-9A1A-4148-A092-1DA7ACEDCC14}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2DA85E2-9A1A-4148-A092-1DA7ACEDCC14}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2DA85E2-9A1A-4148-A092-1DA7ACEDCC14}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{C2DA85E2-9A1A-4148-A092-1DA7ACEDCC14}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2DA85E2-9A1A-4148-A092-1DA7ACEDCC14}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C2DA85E2-9A1A-4148-A092-1DA7ACEDCC14}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
