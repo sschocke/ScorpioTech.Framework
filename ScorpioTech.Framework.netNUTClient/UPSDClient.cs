@@ -184,6 +184,62 @@ namespace ScorpioTech.Framework.netNUTClient
             return list;
         }
         /// <summary>
+        /// Get a list of the read/write variables available on the specified UPS
+        /// </summary>
+        /// <param name="upsName">Name of the UPS</param>
+        /// <returns>A List of <see cref="UPS.VariableDescription"/> entries describing the available variables</returns>
+        public List<UPS.VariableDescription> ListUPSReadWrite(string upsName)
+        {
+            if (connected == false)
+            {
+                throw new Exception("You have to connect by calling Connect() first!");
+            }
+
+            List<UPS.VariableDescription> list = new List<UPS.VariableDescription>();
+            byte[] cmdListUPSReadWrite = ASCIIEncoding.ASCII.GetBytes("LIST RW " + upsName + "\n");
+            clientStream.Write(cmdListUPSReadWrite, 0, cmdListUPSReadWrite.Length);
+            String reply = "";
+            while (clientStream.CanRead)
+            {
+                if (client.Client.Poll(100, SelectMode.SelectRead) == true)
+                {
+                    if (clientStream.DataAvailable == false)
+                    {
+                        break;
+                    }
+
+                    byte[] buffer = new byte[1024];
+                    int bytesRead = this.clientStream.Read(buffer, 0, buffer.Length);
+                    string data = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                    reply += data;
+                }
+                if (reply.StartsWith("ERR ") && reply.EndsWith("\n"))
+                {
+                    HandleUPSDError(reply);
+                }
+                if (reply.StartsWith("BEGIN LIST RW " + upsName + "\n") && reply.EndsWith("END LIST RW " + upsName + "\n"))
+                {
+                    string[] parts = reply.Split(new char[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    for (int idx = 1; idx < parts.Length - 1; idx++)
+                    {
+                        string[] varParts = parts[idx].Split(new char[] { ' ' }, 4, StringSplitOptions.RemoveEmptyEntries);
+                        if (varParts[0] != "RW") continue;
+                        if (varParts.Length != 4) continue;
+                        if (varParts[1] != upsName) continue;
+
+                        varParts[3] = varParts[3].Replace("\"", "");
+                        string desc = this.GetUPSVarDescription(upsName, varParts[2]);
+                        string type = this.GetUPSVarType(upsName, varParts[2]);
+                        type = type.Replace("RW ", "");
+                        list.Add(new UPS.VariableDescription(varParts[2], desc, type, varParts[3]));
+                    }
+                    break;
+                }
+            }
+
+            return list;
+        }
+        /// <summary>
         /// Get a list of the network clients connected to the specified UPS
         /// </summary>
         /// <param name="upsName">Name of the UPS</param>
@@ -277,12 +333,233 @@ namespace ScorpioTech.Framework.netNUTClient
                         if (varParts[1] != upsName) continue;
                         if (varParts[2] != varName) continue;
 
-                        return varParts[3].Replace("\"", "");
+                        return varParts[3].Replace("\"", "").Trim();
                     
                 }
             }
 
             return string.Empty;
+        }
+        /// <summary>
+        /// Gets the data type of a specific variable on the specified UPS
+        /// </summary>
+        /// <param name="upsName">Name of the UPS</param>
+        /// <param name="varName">Name of the variable (for example 'ups.status')</param>
+        /// <returns></returns>
+        public string GetUPSVarType(string upsName, string varName)
+        {
+            if (connected == false)
+            {
+                throw new Exception("You have to connect by calling Connect() first!");
+            }
+
+            byte[] cmdGetUPSVar = ASCIIEncoding.ASCII.GetBytes("GET TYPE " + upsName + " " + varName + "\n");
+            clientStream.Write(cmdGetUPSVar, 0, cmdGetUPSVar.Length);
+            String reply = "";
+            while (clientStream.CanRead)
+            {
+                if (client.Client.Poll(100, SelectMode.SelectRead) == true)
+                {
+                    if (clientStream.DataAvailable == false)
+                    {
+                        break;
+                    }
+
+                    byte[] buffer = new byte[1024];
+                    int bytesRead = this.clientStream.Read(buffer, 0, buffer.Length);
+                    string data = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                    reply += data;
+                }
+                if (reply.StartsWith("ERR ") && reply.EndsWith("\n"))
+                {
+                    HandleUPSDError(reply);
+                }
+                if (reply.StartsWith("TYPE " + upsName + " ") && reply.EndsWith("\n"))
+                {
+                    string[] varParts = reply.Split(new char[] { ' ' }, 4, StringSplitOptions.RemoveEmptyEntries);
+                    if (varParts[0] != "TYPE") continue;
+                    if (varParts.Length != 4) continue;
+                    if (varParts[1] != upsName) continue;
+                    if (varParts[2] != varName) continue;
+
+                    return varParts[3].Trim();
+                }
+            }
+
+            return string.Empty;
+        }
+        /// <summary>
+        /// Gets the description of a specific variable on the specified UPS
+        /// </summary>
+        /// <param name="upsName">Name of the UPS</param>
+        /// <param name="varName">Name of the variable (for example 'ups.status')</param>
+        /// <returns></returns>
+        public string GetUPSVarDescription(string upsName, string varName)
+        {
+            if (connected == false)
+            {
+                throw new Exception("You have to connect by calling Connect() first!");
+            }
+
+            byte[] cmdGetUPSVar = ASCIIEncoding.ASCII.GetBytes("GET DESC " + upsName + " " + varName + "\n");
+            clientStream.Write(cmdGetUPSVar, 0, cmdGetUPSVar.Length);
+            String reply = "";
+            while (clientStream.CanRead)
+            {
+                if (client.Client.Poll(100, SelectMode.SelectRead) == true)
+                {
+                    if (clientStream.DataAvailable == false)
+                    {
+                        break;
+                    }
+
+                    byte[] buffer = new byte[1024];
+                    int bytesRead = this.clientStream.Read(buffer, 0, buffer.Length);
+                    string data = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                    reply += data;
+                }
+                if (reply.StartsWith("ERR ") && reply.EndsWith("\n"))
+                {
+                    HandleUPSDError(reply);
+                }
+                if (reply.StartsWith("DESC " + upsName + " ") && reply.EndsWith("\n"))
+                {
+                    string[] varParts = reply.Split(new char[] { ' ' }, 4, StringSplitOptions.RemoveEmptyEntries);
+                    if (varParts[0] != "DESC") continue;
+                    if (varParts.Length != 4) continue;
+                    if (varParts[1] != upsName) continue;
+                    if (varParts[2] != varName) continue;
+
+                    return varParts[3].Replace("\"", "").Trim();
+                }
+            }
+
+            return string.Empty;
+        }
+        /// <summary>
+        /// Sets the Username for the connection that will be used for any command that require it
+        /// </summary>
+        /// <param name="authUser">Username to use</param>
+        /// <returns>True if username is accepted, False if an error occurs</returns>
+        public bool SetUsername(string authUser)
+        {
+            if (connected == false)
+            {
+                throw new Exception("You have to connect by calling Connect() first!");
+            }
+
+            byte[] cmdSetUsername = ASCIIEncoding.ASCII.GetBytes("USERNAME " + authUser + "\n");
+            clientStream.Write(cmdSetUsername, 0, cmdSetUsername.Length);
+            String reply = "";
+            while (clientStream.CanRead)
+            {
+                if (client.Client.Poll(100, SelectMode.SelectRead) == true)
+                {
+                    if (clientStream.DataAvailable == false)
+                    {
+                        break;
+                    }
+
+                    byte[] buffer = new byte[1024];
+                    int bytesRead = this.clientStream.Read(buffer, 0, buffer.Length);
+                    string data = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                    reply += data;
+                }
+                if (reply.StartsWith("ERR ") && reply.EndsWith("\n"))
+                {
+                    HandleUPSDError(reply);
+                }
+                if (reply == "OK\n")
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        /// <summary>
+        /// Sets the Password for the connection that will be used for any command that require it
+        /// </summary>
+        /// <param name="authPass">Password to use</param>
+        /// <returns>True if password is accepted, False if an error occurs</returns>
+        public bool SetPassword(string authPass)
+        {
+            if (connected == false)
+            {
+                throw new Exception("You have to connect by calling Connect() first!");
+            }
+
+            byte[] cmdSetPassword = ASCIIEncoding.ASCII.GetBytes("PASSWORD " + authPass + "\n");
+            clientStream.Write(cmdSetPassword, 0, cmdSetPassword.Length);
+            String reply = "";
+            while (clientStream.CanRead)
+            {
+                if (client.Client.Poll(100, SelectMode.SelectRead) == true)
+                {
+                    if (clientStream.DataAvailable == false)
+                    {
+                        break;
+                    }
+
+                    byte[] buffer = new byte[1024];
+                    int bytesRead = this.clientStream.Read(buffer, 0, buffer.Length);
+                    string data = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                    reply += data;
+                }
+                if (reply.StartsWith("ERR ") && reply.EndsWith("\n"))
+                {
+                    HandleUPSDError(reply);
+                }
+                if (reply == "OK\n")
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        /// <summary>
+        /// Set the value of a writable variable on the specified UPS
+        /// </summary>
+        /// <param name="upsName">Name of the UPS</param>
+        /// <param name="varName">Name of the variable (for example 'ups.id')</param>
+        /// <param name="newValue">Value to set to</param>
+        /// <returns>True if the variable change is accepted, False if an error occurs</returns>
+        public bool SetUPSVariable(string upsName, string varName, string newValue)
+        {
+            if (connected == false)
+            {
+                throw new Exception("You have to connect by calling Connect() first!");
+            }
+
+            byte[] cmdSetVariable = ASCIIEncoding.ASCII.GetBytes("SET VAR " + upsName + " " + varName + " \"" + newValue + "\"\n");
+            clientStream.Write(cmdSetVariable, 0, cmdSetVariable.Length);
+            String reply = "";
+            while (clientStream.CanRead)
+            {
+                if (client.Client.Poll(100, SelectMode.SelectRead) == true)
+                {
+                    if (clientStream.DataAvailable == false)
+                    {
+                        break;
+                    }
+
+                    byte[] buffer = new byte[1024];
+                    int bytesRead = this.clientStream.Read(buffer, 0, buffer.Length);
+                    string data = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                    reply += data;
+                }
+                if (reply.StartsWith("ERR ") && reply.EndsWith("\n"))
+                {
+                    HandleUPSDError(reply);
+                }
+                if (reply == "OK\n")
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
         /// <summary>
         /// Handles all error replies from UPSD daemon and generates exceptions
@@ -295,11 +572,11 @@ namespace ScorpioTech.Framework.netNUTClient
             if (errParts.Length < 2) throw new ArgumentException("Not a valid UPSD Error Message!", "reply");
 
             UPSException.ErrorCode code;
-            if( Enum.TryParse<UPSException.ErrorCode>(errParts[1].Replace('-', '_'), out code) == false)
+            if (Enum.TryParse<UPSException.ErrorCode>(errParts[1].Replace('-', '_'), out code) == false)
             {
                 throw new UPSException(UPSException.ErrorCode.UNKNOWN_ERROR, errParts[1] + " is not a recognized UPSD Error Code");
             }
-            if( errParts.Length == 3)
+            if (errParts.Length == 3)
             {
                 throw new UPSException(code, errParts[2]);
             }
