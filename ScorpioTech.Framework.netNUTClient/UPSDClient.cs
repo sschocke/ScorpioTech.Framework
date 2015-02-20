@@ -21,6 +21,11 @@ namespace ScorpioTech.Framework.netNUTClient
         private MemoryStream clientRecvBuffer;
 
         /// <summary>
+        /// Are we connected to the UPSD server
+        /// </summary>
+        public bool Connected { get { return this.connected; } }
+
+        /// <summary>
         /// Create a new client connected to the specified address
         /// </summary>
         /// <param name="upsdServer">The address of the UPSD server in the format &lt;hostname&gt;[:&lt;port&gt;]</param>
@@ -64,9 +69,9 @@ namespace ScorpioTech.Framework.netNUTClient
             if (connected) return;
 
             this.client = new TcpClient(this.upsdHostname, this.upsdPort);
-            this.connected = true;
             this.clientStream = this.client.GetStream();
             this.clientRecvBuffer = new MemoryStream(128);
+            this.connected = true;
         }
         /// <summary>
         /// Disconnect from the UPSD daemon
@@ -77,6 +82,7 @@ namespace ScorpioTech.Framework.netNUTClient
 
             this.clientStream.Close();
             this.client.Close();
+            this.connected = false;
         }
         /// <summary>
         /// Get a list of the UPS's configured on the server
@@ -435,6 +441,52 @@ namespace ScorpioTech.Framework.netNUTClient
                     if (varParts[2] != varName) continue;
 
                     return varParts[3].Trim();
+                }
+            }
+
+            return string.Empty;
+        }
+        /// <summary>
+        /// Gets the description of the specified UPS
+        /// </summary>
+        /// <param name="upsName">Name of the UPS</param>
+        /// <returns>The description of the UPS as in ups.conf on the server</returns>
+        public string GetUPSDescription(string upsName)
+        {
+            if (connected == false)
+            {
+                throw new Exception("You have to connect by calling Connect() first!");
+            }
+
+            byte[] cmdGetUPSDesc = ASCIIEncoding.ASCII.GetBytes("GET UPSDESC " + upsName + "\n");
+            clientStream.Write(cmdGetUPSDesc, 0, cmdGetUPSDesc.Length);
+            String reply = "";
+            while (clientStream.CanRead)
+            {
+                if (client.Client.Poll(100, SelectMode.SelectRead) == true)
+                {
+                    if (clientStream.DataAvailable == false)
+                    {
+                        break;
+                    }
+
+                    byte[] buffer = new byte[1024];
+                    int bytesRead = this.clientStream.Read(buffer, 0, buffer.Length);
+                    string data = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                    reply += data;
+                }
+                if (reply.StartsWith("ERR ") && reply.EndsWith("\n"))
+                {
+                    HandleUPSDError(reply);
+                }
+                if (reply.StartsWith("UPSDESC " + upsName + " ") && reply.EndsWith("\n"))
+                {
+                    string[] varParts = reply.Split(new char[] { ' ' }, 3, StringSplitOptions.RemoveEmptyEntries);
+                    if (varParts[0] != "UPSDESC") continue;
+                    if (varParts.Length != 3) continue;
+                    if (varParts[1] != upsName) continue;
+
+                    return varParts[2].Replace("\"", "").Trim();
                 }
             }
 
