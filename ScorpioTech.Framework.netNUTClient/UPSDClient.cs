@@ -16,6 +16,7 @@ namespace ScorpioTech.Framework.netNUTClient
         private string upsdHostname;
         private UInt16 upsdPort;
         private bool connected = false;
+        private bool loggedin = true;
         private TcpClient client;
         private NetworkStream clientStream;
         private MemoryStream clientRecvBuffer;
@@ -24,6 +25,10 @@ namespace ScorpioTech.Framework.netNUTClient
         /// Are we connected to the UPSD server
         /// </summary>
         public bool Connected { get { return this.connected; } }
+        /// <summary>
+        /// Are we logged in to the UPSD server
+        /// </summary>
+        public bool LoggedIn { get { return this.loggedin; } }
 
         /// <summary>
         /// Create a new client connected to the specified address
@@ -79,6 +84,11 @@ namespace ScorpioTech.Framework.netNUTClient
         public void Disconnect()
         {
             if (!connected) return;
+
+            if (loggedin)
+            {
+                this.Logout();
+            }
 
             this.clientStream.Close();
             this.client.Close();
@@ -706,6 +716,87 @@ namespace ScorpioTech.Framework.netNUTClient
                     HandleUPSDError(reply);
                 }
                 if (reply == "OK\n")
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        /// <summary>
+        /// Notify the upsd server that this machine is drawing power from the specified UPS.
+        /// </summary>
+        /// <param name="upsName">Name of the UPS</param>
+        /// <returns>True if successful, or False if an error occured</returns>
+        public bool Login(string upsName)
+        {
+            if (connected == false)
+            {
+                throw new Exception("You have to connect by calling Connect() first!");
+            }
+
+            byte[] cmdLoginUPS = ASCIIEncoding.ASCII.GetBytes("LOGIN " + upsName + "\n");
+            clientStream.Write(cmdLoginUPS, 0, cmdLoginUPS.Length);
+            String reply = "";
+            while (clientStream.CanRead)
+            {
+                if (client.Client.Poll(100, SelectMode.SelectRead) == true)
+                {
+                    if (clientStream.DataAvailable == false)
+                    {
+                        break;
+                    }
+
+                    byte[] buffer = new byte[1024];
+                    int bytesRead = this.clientStream.Read(buffer, 0, buffer.Length);
+                    string data = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                    reply += data;
+                }
+                if (reply.StartsWith("ERR ") && reply.EndsWith("\n"))
+                {
+                    HandleUPSDError(reply);
+                }
+                if (reply == "OK\n")
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        /// <summary>
+        /// Notify the upsd server that we are disconnecting
+        /// </summary>
+        /// <returns>True if successful, or False if an error occured</returns>
+        public bool Logout()
+        {
+            if (connected == false)
+            {
+                throw new Exception("You have to connect by calling Connect() first!");
+            }
+
+            byte[] cmdLogoutUPS = ASCIIEncoding.ASCII.GetBytes("LOGOUT\n");
+            clientStream.Write(cmdLogoutUPS, 0, cmdLogoutUPS.Length);
+            String reply = "";
+            while (clientStream.CanRead)
+            {
+                if (client.Client.Poll(100, SelectMode.SelectRead) == true)
+                {
+                    if (clientStream.DataAvailable == false)
+                    {
+                        break;
+                    }
+
+                    byte[] buffer = new byte[1024];
+                    int bytesRead = this.clientStream.Read(buffer, 0, buffer.Length);
+                    string data = Encoding.ASCII.GetString(buffer, 0, bytesRead);
+                    reply += data;
+                }
+                if (reply.StartsWith("ERR ") && reply.EndsWith("\n"))
+                {
+                    HandleUPSDError(reply);
+                }
+                if ((reply == "OK Goodbye\n") || (reply == "Goodbye...\n"))
                 {
                     return true;
                 }
