@@ -21,7 +21,7 @@ and enumeration of all plugins present in the specified folder.
 _See the documentation in the folder for more details if you are interested in using it._
 
 ## 3. ScorpioTech.Framework.netNUTClient
-A library for connecting to upsd servers from the [NUT project](www.networkupstools.org). Can use this to
+A library for connecting to upsd servers from the [NUT project](http://www.networkupstools.org). Can use this to
 query or monitor UPS that you have connected to a Linux server.
 _See the documentation in the folder for more details if you are interested in using it._
 
