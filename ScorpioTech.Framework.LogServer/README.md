@@ -50,3 +50,6 @@ to write a line of text out to the log. When exiting, call **.Stop()** to stop t
 to wait for all clients to disconnect before terminating the program. _If you don't do the **.Join()** the
 software will still close, but it may happen that there is still a connection open from a client. If you
 were to start the software again immediately, the Logging Server may fail to start up due to this_
+
+##Conclusion
+The Log Server library make it quite simple to add remote real-time monitoring functionality to any .NET application. The example can be downloaded [here](http://www.geekhangar.co.za/ScorpioTech/framework/LoggingServerExample.zip)
